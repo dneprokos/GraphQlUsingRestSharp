@@ -1,6 +1,10 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using NLog;
 using RestSharp;
 using System.Net;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace GraphQl.Client.Client
 {
@@ -8,26 +12,30 @@ namespace GraphQl.Client.Client
     {
         private readonly RestClient restClient;
         private readonly RestRequest request;
+        public Logger? Log { get; set; }
 
         #region Constructors
 
-        public GraphQlClient()
+        public GraphQlClient(Logger? logger = null)
         {
             restClient = new RestClient();
             request = new RestRequest() { Method = Method.Post };
+            Log = logger;
         }
 
-        public GraphQlClient(RestClientOptions options)
+        public GraphQlClient(RestClientOptions options, Logger? logger = null)
         {
             restClient = new RestClient(options);
             request = new RestRequest() { Method = Method.Post };
+            Log = logger;
         }
 
-        public GraphQlClient(string baseUrl)
+        public GraphQlClient(string baseUrl, Logger? logger = null)
         {
             var options = new RestClientOptions(baseUrl);
             restClient = new RestClient(options);
             request = new RestRequest() { Method = Method.Post };
+            Log = logger;
         }
 
         #endregion
@@ -102,12 +110,13 @@ namespace GraphQl.Client.Client
         public RestResponse SendQueryRequest()
         {
             RestResponse response = restClient.Post(request);
+            PerformRequestLog(request, response);
+
             return response;
         }
 
         public RestResponse SendQueryRequest(string queryString)
         {
-
             var request = new RestRequest()
             {
                 Method = Method.Post
@@ -115,7 +124,90 @@ namespace GraphQl.Client.Client
             .AddBody(new { query = queryString });
 
             RestResponse response = restClient.Post(request);
+            PerformRequestLog(request, response);
+            
             return response;
+        }
+
+        private void PerformRequestLog(RestRequest restRequest, RestResponse restResponse)
+        {
+            if (Log != null)
+            {
+                //Request builder
+                var requestLog = new
+                {
+                    uri = restClient.BuildUri(restRequest),
+                    resource = restRequest.Resource,
+                    method = restRequest.Method.ToString(),
+                    parameters = restRequest.Parameters.Select(parameter => new
+                    {
+                        name = parameter.Name,
+                        contentType = parameter.ContentType.ToString(),
+                        type = parameter.Type.ToString(),
+                        value = parameter.Name!.Equals("Authorization") ? 
+                        "*************" :
+                            (parameter.Type.ToString().Equals("RequestBody") && 
+                                parameter.ContentType.ToString().Equals(ContentType.Json)) ?
+                                ConvertJsonString(parameter.Value):
+                            parameter.Value
+                    })
+                };
+
+
+                //Response builder
+                var responseLog = new
+                {
+                    responseUri = restResponse.ResponseUri,
+                    statusCode = restResponse.StatusCode,
+                    contentType = restResponse.ContentType,
+                    content = restResponse.ContentType == ContentType.Json ? 
+                        JsonConvert.DeserializeObject(restResponse.Content!) : 
+                        restResponse.Content,
+                    headers = restResponse.Headers,
+                    errors = restResponse.ErrorMessage
+                };
+
+
+                //Serialize and send
+                string formattedRequesLog = JsonConvert.SerializeObject(requestLog, Formatting.Indented);
+                string formattedResponseLog = JsonConvert.SerializeObject(responseLog, Formatting.Indented);
+
+                Log.Debug("-------------Request------------ ");
+                Log.Debug(formattedRequesLog);
+                Log.Debug("-------------Response------------ ");
+                Log.Debug($"{formattedResponseLog}");
+            }
+        }
+
+        private string ConvertJsonString(object? jsonValue)
+        {
+            if (jsonValue == null)
+            {
+                return string.Empty;
+            }
+
+            var jToken = JToken.FromObject(jsonValue);
+
+            if (jToken["query"] == null)
+            {
+                return string.Empty;
+            }
+
+            var queryValue = jToken["query"].Value<string>();
+
+            if (string.IsNullOrEmpty(queryValue))
+            {
+                return string.Empty;
+            }
+
+            // Remove leading and trailing whitespaces, including line breaks
+            queryValue = queryValue.Trim();
+
+            // Replace escaped newline characters with actual line breaks
+            queryValue = queryValue
+                .Replace("\\r\\n", Environment.NewLine);
+
+            return queryValue;
         }
 
         #endregion

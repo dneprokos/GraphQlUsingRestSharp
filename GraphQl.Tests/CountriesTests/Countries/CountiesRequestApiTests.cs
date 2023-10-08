@@ -34,7 +34,7 @@ namespace GraphQl.Tests.CountriesTests.Countries
                 .Build();
 
             //Act
-            var response = new GraphQlClient(BaseUrl!)
+            var response = new GraphQlClient(BaseUrl!, Log)
                 .AddBody(query)
                 .SendQueryRequest();
 
@@ -85,7 +85,7 @@ namespace GraphQl.Tests.CountriesTests.Countries
                 .Build();
 
             //Act
-            var response = new GraphQlClient(BaseUrl!)
+            var response = new GraphQlClient(BaseUrl!, Log)
                 .AddBody(query)
                 .SendQueryRequest();
 

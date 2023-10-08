@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
+    <PackageReference Include="NLog" Version="5.2.4" />
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
   </ItemGroup>
@@ -17,6 +18,12 @@
   <ItemGroup>
     <ProjectReference Include="..\GraphQl.Client\GraphQl.Client.csproj" />
     <ProjectReference Include="..\GraphQl.Countries.Client\GraphQl.Countries.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="NLog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
