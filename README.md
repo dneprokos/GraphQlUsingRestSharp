@@ -3,6 +3,7 @@
 Training project was created to practice work with GraphQl using .NET and RestSharp library
 
 ![Test](/Images/Test.png)
+![Log](/Images/Log.png)
 
 ## Services
 
