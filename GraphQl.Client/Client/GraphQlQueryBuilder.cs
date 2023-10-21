@@ -3,12 +3,10 @@ using Newtonsoft.Json.Linq;
 using NLog;
 using RestSharp;
 using System.Net;
-using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 
 namespace GraphQl.Client.Client
 {
-    public class GraphQlClient
+    public class GraphQlQueryBuilder
     {
         private readonly RestClient restClient;
         private readonly RestRequest request;
@@ -16,21 +14,21 @@ namespace GraphQl.Client.Client
 
         #region Constructors
 
-        public GraphQlClient(Logger? logger = null)
+        public GraphQlQueryBuilder(Logger? logger = null)
         {
             restClient = new RestClient();
             request = new RestRequest() { Method = Method.Post };
             Log = logger;
         }
 
-        public GraphQlClient(RestClientOptions options, Logger? logger = null)
+        public GraphQlQueryBuilder(RestClientOptions options, Logger? logger = null)
         {
             restClient = new RestClient(options);
             request = new RestRequest() { Method = Method.Post };
             Log = logger;
         }
 
-        public GraphQlClient(string baseUrl, Logger? logger = null)
+        public GraphQlQueryBuilder(string baseUrl, Logger? logger = null)
         {
             var options = new RestClientOptions(baseUrl);
             restClient = new RestClient(options);
@@ -42,19 +40,19 @@ namespace GraphQl.Client.Client
 
         #region Headers
 
-        public GraphQlClient AddHeader(KeyValuePair<string, string> header)
+        public GraphQlQueryBuilder AddHeader(KeyValuePair<string, string> header)
         {
             restClient.AddDefaultHeader(header.Key, header.Value);
             return this;
         }
 
-        public GraphQlClient AddHeader(string key, string value)
+        public GraphQlQueryBuilder AddHeader(string key, string value)
         {
             restClient.AddDefaultHeader(key, value);
             return this;
         }
 
-        public GraphQlClient AddHeaders(Dictionary<string, string> headers)
+        public GraphQlQueryBuilder AddHeaders(Dictionary<string, string> headers)
         {
             restClient.AddDefaultHeaders(headers); 
             return this;
@@ -64,13 +62,13 @@ namespace GraphQl.Client.Client
 
         #region Cookies
 
-        public GraphQlClient AddCookie(string name, string value, string path, string domain)
+        public GraphQlQueryBuilder AddCookie(string name, string value, string path, string domain)
         {
             request.AddCookie(name, value, path, domain);
             return this;
         }
 
-        public GraphQlClient AddCookies(CookieContainer cookieContainer) 
+        public GraphQlQueryBuilder AddCookies(CookieContainer cookieContainer) 
         {
             request.CookieContainer = cookieContainer;
             return this; 
@@ -80,7 +78,7 @@ namespace GraphQl.Client.Client
 
         #region Method
 
-        public GraphQlClient AddMethod(Method method)
+        public GraphQlQueryBuilder AddMethod(Method method)
         {
             request.Method = method;
             return this;
@@ -90,13 +88,13 @@ namespace GraphQl.Client.Client
 
         #region Body
 
-        public GraphQlClient AddBody(string queryString)
+        public GraphQlQueryBuilder AddBody(string queryString)
         {
             request.AddBody(new { query = queryString });
             return this;
         }
 
-        public GraphQlClient AddBody<T>(T query)
+        public GraphQlQueryBuilder AddBody<T>(T query)
         {
             string jsonBody = JsonConvert.SerializeObject(query);
             request.AddBody(jsonBody, "application/json");
